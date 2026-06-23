@@ -26,8 +26,3 @@ Cost: **$24.98
 
 ### Hardware to Buy:
 
-- **The Bridge:** **Sonoff Zigbee 3.0 USB Dongle Plus.** You plug this into your MacBook's USB port (you may need a USB-C adapter). This turns your Mac into the IoT Hub.
-    
-- **The Sensor:** Original recommendation was **Aqara Light Sensor (T1 or P1).** It’s tiny, battery-powered, and highly accurate for measuring Lux but couldn't find it in Canada.
-    
-- **The Actuator (Bulb):** **IKEA TRÅDFRI LED bulb (E26/E27) - White Spectrum.** These are affordable and have a great range of warm temperatures.
