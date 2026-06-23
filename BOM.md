@@ -1,6 +1,8 @@
 
 ==**107.93 - TTL MVP hardware cost as of Apr05 2026==
 
+### Hardware to Buy:
+
 # **x1 Zigbee USB Dongle
 
 ### SONOFF Zigbee 3.0 USB Dongle Plus | ZBDongle-P
@@ -24,5 +26,5 @@ https://www.amazon.ca/Bloepum-Brightness-Real-Time-Reporting-Automation/dp/B0DYH
 
 Cost: **$24.98 
 
-### Hardware to Buy:
+
 
