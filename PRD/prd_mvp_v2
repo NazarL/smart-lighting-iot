@@ -1,0 +1,131 @@
+
+1. ==General Information & Purpose==
+
+- **Product Name:** Smart Lighting Ecosystem (SLE)
+- **Status:** In Development
+- **Version:** 2.1
+- **Target Release Date:** Q2 2026
+- **Product Manager:** Nazar Lebedenko
+- **Executive Summary:** An automated, edge-based lighting system that regulates indoor color temperature based on real-time environmental Lux and solar position. It solves the problem of circadian disruption caused by artificial bright light exposure in the evenings.
+
+2. ==Goals & Success Metrics==
+
+- **Project Goal:** Create a high-fidelity, documented IoT project for personal use and online distribution. Use AI chat-bot assistance to maximize speed of development and testing.  
+- **User Problem:** Artificial indoor lighting suppresses melatonin production in the evening, leading to suboptimal sleep quality.
+- **Key Success Metrics (KPIs):
+	- **Connectivity Uptime:** 100% local execution regardless of Internet availability.
+	- **Latency:** <200ms from sensor Lux change to bulb state change.
+	- **User Outcome:** Measured improvement in subjective sleep quality via journaling or using smartwatch measurements.
+	- **Battery Health Monitoring:** System must maintain >95% uptime for the Tuya sensor; trigger a "Low Battery" alert in the dashboard when the CR2032 cell reaches <15%.
+
+3. ==Target Audience & Personas==
+
+- **Key Persona:** Health-conscious users.
+- **Use Cases/Scenarios:** 
+	- **Sunset Transition:** As the sun sets in Ottawa, the system automatically shifts bulbs to (<2000K) deem and warm light to signal the body to rest.
+	- **Cloudy Day Override:** If external light drops significantly, or light sensor gets blocked or runs out of battery the system uses calculated sun position to adjust.
+	- **Sunrise Transition:** As the sun rises the system automatically shifts bulbs from the evening deem and warm light to a high-intensity, cool white spectrum (5000K+). This transition suppresses melatonin and triggers the body's natural cortisol awakening response to increase morning alertness.
+
+4. ==Hardware Requirements, MVP (The Physical Object)==
+
+- **Sensor:** Tuya Zigbee Light Sensor ($24.98 CAD) providing real-time Lux/Illuminance telemetry. Lux Reporting Frequency: to be specified.
+- **Actuator Requirements:** x1 IKEA TRÅDFRI E26 1100 lumen bulbs ($36.13 CAD) capable of white-spectrum tuning.
+- **Processor & Memory:** Host Linux Fedora IoT PC acting as the temporary edge server.
+- **Battery/Power:** CR2032 battery for Tuya Zigbee Light Sensor.
+- **Bridge:** Sonoff Zigbee 3.0 USB Dongle Plus ($46.82 CAD).
+- **Indicators:** Visual confirmation via bulb color state changes.
+- **Physical Interface:** remote access to Zigbee2MQTT and Node-RED applications.
+- **Form Factor/Environment:** n/a
+
+5. ==Connectivity & Networking==
+
+- **Protocol:** Zigbee 3.0.
+- **Provisioning Process:** Zigbee pairing via the Sonoff ZBDongle-P Coordinator.
+- **Edge Connectivity:** Local MQTT broker running on the Linux machine.
+
+6. ==Firmware & Software Requirements, MVP==
+
+- **Core Functionality:** Local logic execution via Zigbee2MQTT & Node-RED integration. The system must maintain its last state if the PC/Server restarts and ensure 100% data sovereignty and uptime. State persistence is maintained through MQTT "Retain" flags, ensuring actuators return to the correct biological set-point immediately following a system restart.
+- **Core System Logic & Edge Case Handling:
+	- **Redundant Circadian Triggers:** The system must utilize astronomical solar events as a secondary, redundant trigger for sunset and sunrise transitions to ensure reliable performance regardless of local weather conditions.
+	- **Failover Watchdog:** The logic engine must continuously monitor sensor health. Upon detecting a telemetry loss or "data freeze," the system must automatically pivot to a predictive failover mode using calculated sun positions.
+	- **Actuator Command Sanitization:** Outgoing control messages must be stripped of redundant attributes (e.g., RGB data) to ensure IKEA hardware receives only precise Mired and Brightness instructions, preventing actuator flickering.
+- **Intent-Aware State Management:**
+    - **Input Debouncing:** The system must differentiate between automated state reports and manual user intent. Automation logic must only trigger on deliberate "OFF to ON" state changes.
+    - **Time-Aware Evening Override:** If a manual "ON" event occurs during evening hours (19:00–23:00 military time), the system must override default hardware startup behavior to provide an immediate warm-spectrum environment (454 Mireds).
+    - **Deterministic Transition Control:** Any manual user override must immediately terminate active background lighting transitions to prevent state conflicts and maintain system determinism.
+- **Maintenance & Diagnostics:**
+    - **Diagnostic Notifications:** The system must send push notifications to the user via Home Assistant if the Tuya sensor enters failover mode or if the CR2032 battery level drops below 15%.
+- **State Management:** The system must utilize "Retain" flags in the MQTT broker to ensure that if the PC restarts, the bulbs return to the correct kelvin temperature immediately upon reconnection.
+
+7. ==Security & Privacy==
+
+- **Data Encryption:** Zigbee 3.0 standard AES-128 encryption for all local traffic.
+- **Privacy:** "Cloud-Zero" approach—no telemetry or personal light usage data leaves the local network.
+- **Immutable Infrastructure:** Leveraging Fedora IoT’s secure, atomic updates to prevent unauthorized system modifications.
+- **Compliance:** see Section 13.
+
+8. ==User Flow & UI/UX, MVP==
+
+- **Daily Use:** Hands-free automation. The user interacts with the physical world, and the "Things" react autonomously.
+	- **Evening Logic (The Sunset Slope):**
+	    - **Trigger:** Tuya light sensor reports <20 Lux and time is between 7:00 PM and 11:00 PM.
+	    - **Logic:** Node-RED calculates a 30-minute transition slope.
+	    - **Action:** Bulbs receive a series of commands to gradually shift from 250 Mires (100% brightness) to 454 Mires (80% brightness).
+	- **Morning & Day Logic (The Sunrise Slope):**
+	    - **Trigger:** Tuya light sensor reports >100 Lux and time is between 5:00 AM and 6:59 PM.
+	    - **Logic:** Node-RED applies 0-minute transition slope.
+	    - **Action:** Bulbs set to 250 Mires (100% brightness).
+	- **Manual Override Logic:**
+	    - **Trigger:** manual state change when user flips a physical switch or uses Zigbee2MQTT dashboard.
+	    - **Logic:** if a flip of a physical switch detected and time is between 7:00 PM and 11:00 PM Node-RED applies 0-minute transition slope to apply Evening Logic. 
+	    - **Action:** Bulbs set to 454 Mires (80% brightness).
+
+9. ==Technical Addendums
+
+- **System Architecture Diagram:
+- **System Set-up Guide:
+- **Node-RED Flow:
+- **User Stories & Quality Assurance:
+
+1. ==Risks & Dependencies
+
+- **Potential Bottlenecks:** Zigbee signal interference from 2.4GHz Wi-Fi routers in a high-density condo buildings.
+- **Single Point of Failure (SPOF) Mitigation:** The system relies on a single Tuya Zigbee sensor for real-time environmental telemetry. To ensure 100% system reliability without the cost of a multi-sensor array, a "Software Failover" logic is implemented in Node-RED. Upon detecting a sensor data loss or data freeze, the system automatically pivots to a predictive model based on the calculated astronomical sun position for Ottawa’s coordinates. This ensures that circadian transitions remain functional by substituting reactive sensor data with high-accuracy solar calculations during hardware downtime.
+
+11. ==Technical Debt 
+
+- **OS Stability (Windows vs. Linux) (SOLVED):** Transitioning from Windows/Docker to a dedicated "Headless" Linux host is required for 24/7 industrial-grade stability. 
+- **Database Persistence:** Set up an external SQL database for long-term analysis.
+- **Operational Reliability & Maintenance:
+	- **Automated Health Checks:** Implement watchdog timers that trigger system reboots or service restarts if the MQTT broker or Node-RED engine hangs.
+	- **Telemetry Monitoring:** Real-time reporting of device signal strength (LQI) and battery levels to a centralized dashboard for proactive maintenance.
+	- **Fallback Determinism:** Logic failures must always default to a "Safe State" (standard white light) to ensure the unit remains habitable.
+
+12. ==Out of Scope
+
+- **Unit-Level Scaling (multiple bulbs and sensors per Condo):** Deferred to v2.2
+- **Operational Reliability & Maintenance (Condo level):** Deferred to v3.1
+- **Database Persistence:** Deferred to v3.2
+- **AI agent for automatic system health monitoring:** Deferred to v4
+- **High apartment density Building-Level Scaling:** Deferred to v5
+
+13. ==Potential Compliance & Regulatory Roadmap
+
+- Phase 1: RF & Emissions (FCC/ISED)
+	- **Modular Leveraging:** Utilize the existing FCC/ISED certifications for the **Sonoff ZBDongle-P** and **IKEA TRÅDFRI** Zigbee radios to minimize full-scale intentional radiator testing.
+	- **Unintentional Radiator Testing:** Conduct **FCC Part 15B (USA)** and **ICES-003 (Canada)** testing on the final "BioLight Hub" enclosure to ensure the combined electronics do not emit prohibited radio interference.
+	- **Labeling:** Ensure the exterior of the commercial hub carries the required "Contains FCC ID" and "Contains IC" statements for the Zigbee coordinator.
+
+- Phase 2: Electrical Safety (UL/CSA)
+	- **NRTL Certification:** Engage a Nationally Recognized Testing Laboratory (e.g., UL, CSA, or Intertek) to certify the system for home use. This is critical for consumer insurance and retail acceptance in North America.
+	- **Component Safety:** Mandate that any external power supply used for the dedicated Linux station (MVP v2.2+) must carry an individual UL/CSA mark.
+
+- Phase 3: Regional & Environmental Requirements
+	- **Bilingual Documentation:** Produce all user manuals, safety warnings, and packaging in both **English and French** to comply with Canadian ISED and consumer protection laws.
+	- **E-Waste Compliance (RPRA):** Register the product with the **Resource Productivity and Recovery Authority (RPRA)** in Ontario to fulfill producer responsibilities for electronics recycling.
+	- **RoHS Compliance:** Verify that all custom-manufactured components (PCB, Enclosure) are free of restricted hazardous substances (Lead, Mercury, etc.).
+
+- Phase 4: Cybersecurity & AI Transparency
+	- **U.S. Cyber Trust Mark:** Implement a "Secure by Design" framework (no default passwords, encrypted local storage) to qualify for the voluntary FCC cybersecurity labeling program.
+	- **AIDA Compliance (Canada):** Document the risk mitigation strategies for the "Local AI Agent" to ensure compliance with the **Artificial Intelligence and Data Act (AIDA)**, specifically regarding how the AI influences the home environment.
