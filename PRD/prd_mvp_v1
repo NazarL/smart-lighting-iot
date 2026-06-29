@@ -1,0 +1,155 @@
+
+1. ==General Information & Purpose==
+
+- **Product Name:** Smart Lighting Ecosystem (SLE)
+- **Status:** Completed
+- **Version:** 1.1
+- **Target Release Date:** Q2 2026
+- **Product Manager:** Nazar Lebedenko
+- **Executive Summary:** An automated, edge-based lighting system that regulates indoor color temperature based on real-time environmental Lux and solar position. It solves the problem of circadian disruption caused by artificial bright light exposure in the evenings.
+
+2. ==Goals & Success Metrics==
+
+- **Business Goal:** Create a high-fidelity, documented IoT project for personal use and online distribution.
+- **Learning Goal:** Use AI chat-bot to maximize speed of development and testing.   
+- **User Problem:** Artificial indoor lighting suppresses melatonin production in the evening, leading to poor sleep quality.
+- **Key Success Metrics (KPIs):
+	- **Connectivity Uptime:** 100% local execution regardless of Internet availability.
+	- **Latency:** <200ms from sensor Lux change to bulb state change.
+	- **User Outcome:** Measured improvement in subjective sleep quality via journaling or using smartwatch measurements.
+	- **Battery Health Monitoring:** System must maintain >95% uptime for the Tuya sensor; trigger a "Low Battery" alert in the dashboard when the CR2032 cell reaches <15%.
+
+3. ==Target Audience & Personas==
+
+- **Key Persona:** Health-conscious users
+- **Use Cases/Scenarios:** 
+	- **Sunset Transition:** As the sun sets in Ottawa, the system automatically shifts bulbs to <2000K (Warm Red) to signal the body to rest.
+	- **Cloudy Day Override:** If external light drops significantly during a storm, the system adjusts indoor brightness to maintain focus without harsh blue light.
+	- **Sunrise Transition:** As the sun rises the system automatically shifts bulbs from the evening "Red" state to a high-intensity, cool white spectrum (5000K+). This transition suppresses melatonin and triggers the body's natural cortisol awakening response to increase morning alertness.
+
+4. ==Hardware Requirements (The Physical Object)==
+
+- **Sensor:** Tuya Zigbee Light Sensor ($24.98 CAD) providing real-time Lux/Illuminance telemetry. Lux Reporting Frequency: to be specified.
+- **Actuator Requirements:** x2 IKEA TRÅDFRI E26 1100 lumen bulbs ($36.13 CAD) capable of white-spectrum tuning.
+- **Processor & Memory:** Host Windows PC (running Docker) acting as the temporary edge server.
+- **Battery/Power:** CR2032 battery for Tuya Zigbee Light Sensor.
+- **Bridge:** Sonoff Zigbee 3.0 USB Dongle Plus ($46.82 CAD).
+- **Indicators:** Visual confirmation via bulb color state changes.
+- **Physical Interface:** Windows PC with Home Assistant software.
+- **Form Factor/Environment:** n/a
+
+5. ==Connectivity & Networking==
+
+- **Protocol:** Zigbee 3.0.
+- **Provisioning Process:** Zigbee pairing via the Sonoff ZBDongle-P Coordinator.
+- **Edge Connectivity:** Local MQTT broker running on the Windows PC.
+
+6. ==Firmware & Software Requirements==
+
+- **Core Functionality:** Local logic execution via Home Assistant & Node-Red integration. The system must maintain its last state if the PC/Server restarts.
+- **Logic Engine (Node-RED):** 
+	- **Primary Source:** Node-RED will utilize a "Suncalc" node to retrieve astronomical solar events (Dawn, Golden Hour, Dusk) based on the user's GPS coordinates in Ottawa.
+	- **Failover Watchdog:** A watchdog timer must monitor incoming Tuya MQTT telemetry. If no messages are received for 60 minutes (indicating sensor failure or battery depletion), the system must automatically pivot to a predictive "Astronomical Failover" mode using calculated sun positions.
+	- **Manual Override Gate:** If a manual state change is detected via a physical switch or the Home Assistant dashboard, the automation logic must be "Gated" (disabled) for 60 minutes to prioritize user intent. Node-RED will utilize a "Suncalc" node to retrieve astronomical solar events (Dawn, Golden Hour, Dusk) based on the user's GPS coordinates (Ottawa).
+- **Signal Processing & Reliability:**
+    - **Hysteresis & Smoothing:** Implementation of a "Smoothing" node to filter rapid Lux fluctuations (e.g., shadows or passing birds) and a 20-Lux hysteresis buffer to prevent "cycling" or flickering when light levels hover near a threshold.
+    - **State Management:** The system must utilize "Retain" flags in the MQTT broker to ensure that if the Windows PC restarts, the bulbs return to the correct Kelvin temperature immediately upon reconnection.
+    - **Soft-Failure Mode:** In the event of a total sensor and calculation fault, the system defaults to a time-based "Safe Mode" at 2700K (Warm White).
+- **Maintenance & Diagnostics:**
+    - **Diagnostic Notifications:** The system must send push notifications to the user via Home Assistant if the Tuya sensor enters failover mode or if the CR2032 battery level drops below 15%.
+- **State Management:** The system must utilize "Retain" flags in the MQTT broker to ensure that if the Windows PC restarts, the bulbs return to the correct kelvin temperature immediately upon reconnection.
+
+7. ==Security & Privacy==
+
+- **Data Encryption:** Zigbee 3.0 standard AES-128 encryption for all local traffic.
+- **Privacy:** "Cloud-Zero" approach—no telemetry or personal light usage data leaves the local network.
+- **Compliance:** see Section 11.
+
+8. ==User Flow & UI/UX==
+- **Daily Use:** Hands-free automation. The user interacts with the physical world, and the "Things" react autonomously.
+	- **Evening Logic (The Sunset Slope):**
+	    - **Trigger:** Tuya light sensor reports <50 Lux AND time is between 6:00 PM and 11:00 PM.
+	    - **Processing:** Node-RED calculates a 30-minute transition slope.
+	    - **Action:** Bulbs receive a series of commands to gradually shift from 4000K (100% brightness) to 2000K (20% brightness).
+	- **Morning Logic (The Dawn Awakening):**
+	    - **Trigger:** 30 minutes before the system-set wake-up time.
+	    - **Processing:** Node-RED checks if the Tuya sensor Lux is currently <100 (ensuring the sun hasn't already provided sufficient light).
+	    - **Action:** Bulbs begin a "Dawn Simulation," shifting from 2000K to 5000K over 20 minutes.
+	- **Manual Override Logic:**
+	    - **Logic:** If a manual state change is detected (user flips a physical switch or uses the HA dashboard), the automation "Logic Gate" is disabled for 60 minutes to prevent the system from fighting the user's manual preference.
+
+9. ==Risks & Dependencies
+
+- **Potential Bottlenecks:** Zigbee signal interference from 2.4GHz Wi-Fi routers in a high-density condo.
+- **Dependencies:** Docker Desktop stability on Windows PC after system restart (no access to http://homeassistant.local:8123).
+
+10. ==Technical Debt (Draft)
+
+- **OS Stability (Windows vs. Linux):** Transitioning from Windows/Docker to a dedicated "Headless" Linux host is required for 24/7 industrial-grade stability.
+- **Database Persistence:** Current 10-day telemetry limit in Home Assistant must be expanded with an external SQL database for long-term seasonal analysis.
+- **Single Point of Failure (SPOF) Mitigation:** The current architecture relies on a single Tuya Zigbee sensor for real-time environmental telemetry. To ensure 100% system reliability without the cost of a multi-sensor array, a "Software Failover" logic is implemented in Node-RED. Upon detecting a sensor data loss or data freeze, the system automatically pivots to a predictive model based on the calculated astronomical sun position for Ottawa’s coordinates. This ensures that circadian transitions remain functional by substituting reactive sensor data with high-accuracy solar calculations during hardware downtime.
+
+11. ==Out of Scope
+
+- **Dedicated Linux station:** Deferred to MVP v2.2
+- **Alternative brand of light bulbs:** Deferred to MVP v2.3
+- **Legacy Android Integration:** Deferred to MVP v3
+- **AI agent:** Deferred to MVP v3
+
+-------------------------------------------
+
+12. ==Potential Compliance & Regulatory Roadmap
+
+- Phase 1: RF & Emissions (FCC/ISED)
+
+	- **Modular Leveraging:** Utilize the existing FCC/ISED certifications for the **Sonoff ZBDongle-P** and **IKEA TRÅDFRI** Zigbee radios to minimize full-scale intentional radiator testing.
+	- **Unintentional Radiator Testing:** Conduct **FCC Part 15B (USA)** and **ICES-003 (Canada)** testing on the final "BioLight Hub" enclosure to ensure the combined electronics do not emit prohibited radio interference.
+	- **Labeling:** Ensure the exterior of the commercial hub carries the required "Contains FCC ID" and "Contains IC" statements for the Zigbee coordinator.
+
+- Phase 2: Electrical Safety (UL/CSA)
+
+	- **NRTL Certification:** Engage a Nationally Recognized Testing Laboratory (e.g., UL, CSA, or Intertek) to certify the system for home use. This is critical for consumer insurance and retail acceptance in North America.
+	- **Component Safety:** Mandate that any external power supply used for the dedicated Linux station (MVP v2.2+) must carry an individual UL/CSA mark.
+
+- Phase 3: Regional & Environmental Requirements
+
+	- **Bilingual Documentation:** Produce all user manuals, safety warnings, and packaging in both **English and French** to comply with Canadian ISED and consumer protection laws.
+	- **E-Waste Compliance (RPRA):** Register the product with the **Resource Productivity and Recovery Authority (RPRA)** in Ontario to fulfill producer responsibilities for electronics recycling.
+	- **RoHS Compliance:** Verify that all custom-manufactured components (PCB, Enclosure) are free of restricted hazardous substances (Lead, Mercury, etc.).
+
+- Phase 4: Cybersecurity & AI Transparency
+
+	- **U.S. Cyber Trust Mark:** Implement a "Secure by Design" framework (no default passwords, encrypted local storage) to qualify for the voluntary FCC cybersecurity labeling program.
+	- **AIDA Compliance (Canada):** Document the risk mitigation strategies for the "Local AI Agent" to ensure compliance with the **Artificial Intelligence and Data Act (AIDA)**, specifically regarding how the AI influences the home environment.
+
+---------------------------------------------------------------------
+
+### Certification requirements: 
+
+## 1. Radio Frequency (RF) Compliance: FCC & ISED
+
+In 2026, the baseline requirement for any electronic device with a radio (Zigbee) remains the **FCC (USA)** and **ISED (Canada)** certification.
+
+- **Modular Approval:** The good news is that the Sonoff dongle and IKEA bulbs already have FCC/IC IDs. As a PM, you can leverage their "Modular Approval". However, as the "Host" manufacturer, you must still perform **Unintentional Radiator Testing** (FCC Part 15B) to ensure your combined system (the Linux station + Dongle) doesn't leak interference.
+  - **Bilingual Requirements (Canada):** Unlike the USA, ISED Canada mandates that all safety labels, user manuals, and technical warnings be available in both **English and French**.
+  - **Labeling:** Your final product enclosure must be labeled: _"Contains FCC ID: [Sonoff ID]"_ and _"Contains IC: [Sonoff ID]"_.
+## 2. Electrical Safety: UL and CSA
+
+While UL (USA) and CSA (Canada) certifications are technically "voluntary" for low-voltage devices, they are functionally **mandatory** for retail and insurance.
+
+- **The "Plug" Rule:** If your system includes a power adapter that plugs into a wall outlet, that adapter **must** have a UL/CSA mark.
+- **Liability:** Selling uncertified electrical equipment that connects to a home's power grid exposes you to massive personal liability if a fire occurs. Most Canadian retailers (like Best Buy or Amazon.ca) will refuse to list your product without an **NRTL (Nationally Recognized Testing Laboratory)** mark.
+
+## 3. The 2026 Cybersecurity & AI Landscape
+
+As of 2026, new regulations have "teeth" regarding IoT security and AI transparency.
+
+- **U.S. Cyber Trust Mark:** This is a voluntary but highly influential program established by the FCC. In 2026, consumers look for this "shield" logo on IoT boxes to know the device has a secure boot and a commitment to software patches.
+- **Canada's AIDA (Bill C-27):** Since your vision includes a **"local AI agent,"** you must comply with the _Artificial Intelligence and Data Act_. In 2026, if your AI agent makes "high-impact" decisions (like controlling home environments), you are required to document your risk mitigation strategies and ensure the system is "interpretable".
+- **California SB 53:** If you sell to California, you must provide a "Reasonable Security" statement and ensure the device does not have a universal default password.
+
+## 4. Environmental & Waste (E-Waste)
+
+As a producer in 2026, you are responsible for the "End-of-Life" of your hardware.
+- **Ontario (RPRA):** Since you are in Ottawa, you fall under Ontario’s _Resource Recovery and Circular Economy Act_. You must register as a producer and pay "Environmental Handling Fees" (EHF) to support the recycling of electronics.
+- **RoHS Compliance:** You must ensure that any custom enclosures or cables you manufacture are free of lead, mercury, and other hazardous substances.
