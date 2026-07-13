@@ -1,0 +1,415 @@
+[
+    {
+        "id": "9f4f9a6d606f7686",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8fde31194cf5668a",
+        "type": "mqtt in",
+        "z": "9f4f9a6d606f7686",
+        "name": "",
+        "topic": "zigbee2mqtt/sensor_livingroom",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "60fa2677b43db29b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 380,
+        "wires": [
+            [
+                "5a915d56e6809d52"
+            ]
+        ]
+    },
+    {
+        "id": "5a915d56e6809d52",
+        "type": "switch",
+        "z": "9f4f9a6d606f7686",
+        "name": "Lux",
+        "property": "payload.illuminance_lux",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "100",
+                "vt": "num"
+            },
+            {
+                "t": "lt",
+                "v": "20",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 390,
+        "y": 380,
+        "wires": [
+            [
+                "4b7dda90a1f88c41"
+            ],
+            [
+                "65f4445e160ff8e7"
+            ]
+        ]
+    },
+    {
+        "id": "4b7dda90a1f88c41",
+        "type": "change",
+        "z": "9f4f9a6d606f7686",
+        "name": "SunriseAction",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{\"state\":\"ON\",\"color_temp\":250,\"brightness\":254}",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 640,
+        "y": 320,
+        "wires": [
+            [
+                "877816173dd4997b"
+            ]
+        ]
+    },
+    {
+        "id": "b9d234b6540f7949",
+        "type": "change",
+        "z": "9f4f9a6d606f7686",
+        "name": "DeleteRGBColor",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "payload.rgb_color",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "payload.brightness_pct",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "payload.color_temp_kelvin",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 810,
+        "y": 420,
+        "wires": [
+            [
+                "a1cf299c1c2e42be",
+                "877816173dd4997b"
+            ]
+        ]
+    },
+    {
+        "id": "a1cf299c1c2e42be",
+        "type": "debug",
+        "z": "9f4f9a6d606f7686",
+        "name": "debug: GRBColorDeletion",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1070,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "1e1a20995f28b9dc",
+        "type": "rbe",
+        "z": "9f4f9a6d606f7686",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 390,
+        "y": 180,
+        "wires": [
+            [
+                "6d0430c09dd87c5a"
+            ]
+        ]
+    },
+    {
+        "id": "6d0430c09dd87c5a",
+        "type": "switch",
+        "z": "9f4f9a6d606f7686",
+        "name": "ON",
+        "property": "payload.state",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "ON",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 510,
+        "y": 180,
+        "wires": [
+            [
+                "b8402884dc1089a1"
+            ]
+        ]
+    },
+    {
+        "id": "b8402884dc1089a1",
+        "type": "switch",
+        "z": "9f4f9a6d606f7686",
+        "name": "TimeCheck",
+        "property": "$number($now('[H]', '-0400'))",
+        "propertyType": "jsonata",
+        "rules": [
+            {
+                "t": "btwn",
+                "v": "19",
+                "vt": "num",
+                "v2": "23",
+                "v2t": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 640,
+        "y": 180,
+        "wires": [
+            [
+                "48746138f92c0f58",
+                "0da2613cb79deb97"
+            ]
+        ]
+    },
+    {
+        "id": "48746138f92c0f58",
+        "type": "change",
+        "z": "9f4f9a6d606f7686",
+        "name": "InstantWarmth",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{     \"state\": \"ON\",     \"color_temp\": 454,     \"brightness\": 248 }",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 810,
+        "y": 180,
+        "wires": [
+            [
+                "9683615f2c5ba52e",
+                "877816173dd4997b"
+            ]
+        ]
+    },
+    {
+        "id": "0da2613cb79deb97",
+        "type": "change",
+        "z": "9f4f9a6d606f7686",
+        "name": "STOP",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "stop",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 790,
+        "y": 260,
+        "wires": [
+            [
+                "65f4445e160ff8e7"
+            ]
+        ]
+    },
+    {
+        "id": "9683615f2c5ba52e",
+        "type": "debug",
+        "z": "9f4f9a6d606f7686",
+        "name": "debug: InstantWarmth",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "8209254dd47596ad",
+        "type": "sunrise",
+        "z": "9f4f9a6d606f7686",
+        "name": "OttawaSunPositionCalc",
+        "lat": "45.42",
+        "lon": "-75.70",
+        "start": "sunrise",
+        "end": "sunset",
+        "soff": 0,
+        "eoff": 0,
+        "sendAtStartup": true,
+        "x": 400,
+        "y": 540,
+        "wires": [
+            [],
+            [
+                "65f4445e160ff8e7"
+            ]
+        ]
+    },
+    {
+        "id": "65f4445e160ff8e7",
+        "type": "light-transition",
+        "z": "9f4f9a6d606f7686",
+        "name": "DawnAction",
+        "startRGB": "#ff0000",
+        "transitionRGB": "#ffc864",
+        "endRGB": "#ffffff",
+        "startMired": "250",
+        "endMired": "454",
+        "transitionTime": "10",
+        "transitionTimeUnits": "Minute",
+        "steps": "10",
+        "startBright": "100",
+        "endBright": "80",
+        "brightnessType": "Percent",
+        "transitionType": "Linear",
+        "colorTransitionType": "Weighted",
+        "x": 640,
+        "y": 480,
+        "wires": [
+            [
+                "b9d234b6540f7949"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "8ea17d5b0fce42d0",
+        "type": "mqtt in",
+        "z": "9f4f9a6d606f7686",
+        "name": "",
+        "topic": "Zigbee2MQTT/Ikea_Bulb_Bedroom_Computer_Table",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "60fa2677b43db29b",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 180,
+        "wires": [
+            [
+                "1e1a20995f28b9dc"
+            ]
+        ]
+    },
+    {
+        "id": "877816173dd4997b",
+        "type": "mqtt out",
+        "z": "9f4f9a6d606f7686",
+        "name": "",
+        "topic": "zigbee2mqtt/Ikea_Bulb_Bedroom_Computer_Table/set",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "60fa2677b43db29b",
+        "x": 1140,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "60fa2677b43db29b",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "10.0.0.234",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "41e8bffd0ecabe72",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-suncalc": "1.2.0",
+            "node-red-contrib-light-transition": "1.9.1"
+        }
+    }
+]
